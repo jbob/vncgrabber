@@ -7,6 +7,8 @@ from PIL import Image
 import socket
 import time
 
+MAXPROCS = 30
+
 def check(ip):
     hostname = 'Unknown'
     try:
@@ -39,14 +41,25 @@ def check(ip):
 
     return
 
+# List of running child processes
+# The Pool module isn't used, because it isn't easy
+# to kill a single child-processes
+ps = []
 
 line = sys.stdin.readline()
 while line:
+    if len(ps) >= MAXPROCS:
+        # Too many running processes, we are stopping the
+        # oldest one.
+        print "Stopping old process"
+        print len(ps)
+        ps[0].join(10)
+        if ps[0].is_alive():
+            print 'Timeout for check'
+            ps[0].terminate()
+        del(ps[0])
     ip = line.strip()
     p = multiprocessing.Process(target=check, args=(ip,))
     p.start()
-    p.join(10)
-    if p.is_alive():
-        print 'Timeout from %s' % ip
-        p.terminate()
+    ps.append(p)
     line = sys.stdin.readline()
