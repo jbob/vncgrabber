@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import sys
+import signal
 import pyvnc
 import multiprocessing
 from PIL import Image
@@ -8,6 +9,18 @@ import socket
 import time
 
 MAXPROCS = 30
+
+
+def signal_cleanup(signal, frame):
+    print 'SIGINT received. Cleaning up'
+    for p in ps:
+        p.join(0)
+        if p.is_alive():
+            p.terminate()
+    sys.exit()
+
+# Setting up signal handling
+signal.signal(signal.SIGINT, signal_cleanup)
 
 def check(ip):
     hostname = 'Unknown'
